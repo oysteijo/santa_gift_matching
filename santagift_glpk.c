@@ -42,7 +42,7 @@ int main(void)
 
 
   glp_add_rows(mip, n_gift_type);
-  glp_add_cols(mip, n_children);
+  glp_add_cols(mip, num_variables);
 
 
   /* Allocate matrix memory */
@@ -56,8 +56,12 @@ int main(void)
 
   int count_non_trivial = 0;
   for( int gift_id = 0; gift_id < n_gift_type; gift_id++ ){
-      if( !((gift_id+1) % 10) ) printf("Setting up problem %3d%% completed\n", (gift_id+1) / 10);
-      fflush(stdout);
+      
+      if( !((gift_id+1) % 10) ){
+          printf("Setting up problem %3d%% completed\r", (gift_id+1) / 10);
+          fflush(stdout);
+      }
+      
       glp_set_row_bnds( mip, gift_id + 1, GLP_DB, 0, 1000 ); // sum x <= 1000, try with (GLP_FX, 0, 1000) if this does not work. 
       for( int child_id = 0; child_id < n_children; child_id++ ){
           int child_happiness = -1;
@@ -86,8 +90,8 @@ int main(void)
           glp_set_col_kind(mip, count_non_trivial, GLP_BV );
           glp_set_obj_coef(mip, count_non_trivial, val);
 
-          ia[count_non_trivial] = gift_id;
-          ja[count_non_trivial] = child_id; 
+          ia[count_non_trivial] = gift_id + 1;
+          ja[count_non_trivial] = count_non_trivial; 
           ar[count_non_trivial] = 1.0;
       }
   }
@@ -96,7 +100,7 @@ int main(void)
   /* Outputs: Non trivial variables: 10990072 */
 
   /* Solve */
-  printf("Loading matrix.\n");
+  printf("\nLoading matrix.\n");
   glp_load_matrix(mip, count_non_trivial, ia, ja, ar);
   glp_iocp parm;
   glp_init_iocp(&parm);
@@ -108,13 +112,21 @@ int main(void)
       printf("Failed with error: %d\n", err);
       return 0;
   }
-  double z = glp_mip_obj_val(mip);
-  double x1 = glp_mip_col_val(mip, 1);
-  double x2 = glp_mip_col_val(mip, 2);
-  double x3 = glp_mip_col_val(mip, 3);
-  double x4 = glp_mip_col_val(mip, 4);
-  printf("\nz = %g; x1 = %g; x2 = %g; x3 = %g, x4 = %g\n", z, x1, x2, x3, x4);
 
+  double z = glp_mip_obj_val(mip);
+  printf("Solution found! Objective value (not the same as score): %g\n", z);
+
+
+  FILE *fp = fopen("solution.txt", "w");
+  assert(fp);
+
+  for( int i = 1; i <= num_variables ; i++ ){
+      double val = glp_mip_col_val(mip, i);
+      if ( val > 0.9 ) {
+          fprintf(fp, "%s\n", glp_get_col_name(mip, i));
+      }
+  }
+  fclose(fp);
 
   glp_delete_prob(mip);
   return 0;
