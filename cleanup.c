@@ -38,7 +38,7 @@ int main(int argc, char *argv[] )
         }
         if(answer[child_id] != -1 ){
             printf("child_id %d has already got a gift.\n", child_id);
-            return -1;
+            /* return -1; */
         }
         answer[child_id] = gift_id;
         unassigend--;
@@ -49,13 +49,13 @@ int main(int argc, char *argv[] )
     for ( int i = 0; i < 10; i++ )
         printf("%d\n", answer[i]);
     
-    /* Twins */
+    /* Twins? */
 
     printf("There are %d children that got no gift yet\n", unassigend); 
 
     for ( int child_id = 0; child_id < n_children; child_id++ )
         if( answer[child_id] == -1 ){
-            printf("child_id %d has no gift yet.\n", child_id);
+            /* printf("child_id %d has no gift yet.\n", child_id); */
             for ( int gift_id = 0; gift_id < n_gift_types; gift_id++ ){
                 if( gifts[gift_id] > 0 ){
                     answer[child_id] = gift_id;

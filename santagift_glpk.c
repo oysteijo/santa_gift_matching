@@ -78,6 +78,7 @@ int main(void)
 					gift_happiness = (n_child_pref-rank) * 2; 
 					break;
 				}
+
 			if (child_happiness + gift_happiness == -2 )
 				continue;
 			count_non_trivial++;
@@ -96,7 +97,7 @@ int main(void)
 			ar[count_non_trivial] = 1.0;
 
 			ia[num_variables + count_non_trivial] = child_id + 1;
-			ja[num_variables + count_non_trivial] = num_variables + count_non_trivial; 
+			ja[num_variables + count_non_trivial] = count_non_trivial; 
 			ar[num_variables + count_non_trivial] = 1.0; 
 		}
 	}
