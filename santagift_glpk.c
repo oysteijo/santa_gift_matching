@@ -34,6 +34,28 @@ const int32_t childlist[n_gift_type][n_child_pref] = {
 #include "gift_goodkids.h"
 };
 
+#define NO_HAPPINESS -101
+
+static int calc_happiness( int child_id, int gift_id )
+{
+	int child_happiness = -1;
+	for (int rank=0 ; rank < n_wish_pr_child ; rank++)
+		if( wishlist[child_id][rank] == gift_id ){
+			child_happiness = (n_wish_pr_child-rank) * 2;
+			break;
+		}
+
+	int gift_happiness = -1;
+	for (int rank=0 ; rank < n_child_pref ; rank++)
+		if( childlist[gift_id][rank] == child_id){
+			gift_happiness = (n_child_pref-rank) * 2; 
+			break;
+		}
+
+	return child_happiness*100 + gift_happiness;
+}
+
+
 int main(void)
 {
 	glp_prob *mip = glp_create_prob();
@@ -54,7 +76,7 @@ int main(void)
 	assert( ja );
 	assert( ar );
 
-	int count_non_trivial = 0;
+	int constraint_col = 0;
 	for( int gift_id = 0; gift_id < n_gift_type; gift_id++ ){
 
 		/* BTW: This 'counter' is not general */
@@ -65,53 +87,41 @@ int main(void)
 
 		glp_set_row_bnds( mip, gift_id + 1, GLP_DB, 0, 1000 ); 
 		for( int child_id = 0; child_id < n_children; child_id++ ){
-			int child_happiness = -1;
-			for (int rank=0 ; rank < n_wish_pr_child ; rank++)
-				if( wishlist[child_id][rank] == gift_id ){
-					child_happiness = (n_wish_pr_child-rank) * 2;
-					break;
-				}
 
-			int gift_happiness = -1;
-			for (int rank=0 ; rank < n_child_pref ; rank++)
-				if( childlist[gift_id][rank] == child_id){
-					gift_happiness = (n_child_pref-rank) * 2; 
-					break;
-				}
-
-			if (child_happiness + gift_happiness == -2 )
+			int happiness = calc_happiness( child_id, gift_id );
+			if ( happiness == NO_HAPPINESS ) 
 				continue;
-			count_non_trivial++;
 
-			int ival = child_happiness*100 + gift_happiness;
-			double val = ival / 2000.0;
+			double val = happiness / 2000.0;
+			constraint_col++;
 
 			char varname[30];
 			sprintf( varname, "%d,%d", child_id, gift_id);
-			glp_set_col_name(mip, count_non_trivial, varname);
-			glp_set_col_kind(mip, count_non_trivial, GLP_BV );
-			glp_set_obj_coef(mip, count_non_trivial, val);
+			glp_set_col_name(mip, constraint_col, varname);
+			glp_set_col_kind(mip, constraint_col, GLP_BV );
+			glp_set_obj_coef(mip, constraint_col, val);
 
-			ia[count_non_trivial] = gift_id + 1;
-			ja[count_non_trivial] = count_non_trivial; 
-			ar[count_non_trivial] = 1.0;
+			ia[constraint_col] = gift_id + 1;
+			ja[constraint_col] = constraint_col; 
+			ar[constraint_col] = 1.0;
 
-			ia[num_variables + count_non_trivial] = child_id + 1;
-			ja[num_variables + count_non_trivial] = count_non_trivial; 
-			ar[num_variables + count_non_trivial] = 1.0; 
+			ia[num_variables + constraint_col] = child_id + n_gift_type + 1;
+			ja[num_variables + constraint_col] = constraint_col; 
+			ar[num_variables + constraint_col] = 1.0; 
 		}
 	}
+	printf("\n"); fflush(stdout); /* When printing \r to stdout you should add something like this. */
 
 	/* Only one gift pr. child */
 	for( int child_id = 0; child_id < n_children; child_id++ )
-		glp_set_row_bnds( mip, n_gift_type + child_id + 1, GLP_DB, 0, 1 ); 
+		glp_set_row_bnds( mip, child_id + n_gift_type + 1, GLP_DB, 0, 1 ); 
 
-	/* printf("Non trivial variables: %d\n", count_non_trivial); */
+	printf("Non trivial variables: %d\n", constraint_col); 
 	/* Outputs: Non trivial variables: 10990072 */
 
 	/* Solve */
-	printf("\nLoading matrix.\n");
-	glp_load_matrix(mip, count_non_trivial, ia, ja, ar);
+	printf("Loading matrix.\n");
+	glp_load_matrix(mip, constraint_col, ia, ja, ar);
 	glp_iocp parm;
 	glp_init_iocp(&parm);
 	parm.presolve = GLP_ON;
