@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <glpk.h>
 #include <assert.h>
 
@@ -23,8 +24,15 @@ End
 #define n_children  1000000
 #define n_child_pref 1000
 #define n_wish_pr_child 10
+
+#define with_twin_constraints true
+
 /* I've counted in advance */
+#if with_twin_constraints
+#define num_variables 10989767
+#else
 #define num_variables 10990072
+#endif 
 
 const uint16_t wishlist[n_children][n_wish_pr_child] = {
 #include "child_wishlist.h"
@@ -66,7 +74,6 @@ int main(void)
 	glp_add_rows(mip, n_gift_type + n_children);
 	glp_add_cols(mip, num_variables);
 
-
 	/* Allocate sparse matrix memory */
 	int    *ia = malloc( (2 * num_variables + 1) * sizeof(int));
 	int    *ja = malloc( (2 * num_variables + 1) * sizeof(int));
@@ -88,8 +95,17 @@ int main(void)
 		glp_set_row_bnds( mip, gift_id + 1, GLP_DB, 0, 1000 ); 
 		for( int child_id = 0; child_id < n_children; child_id++ ){
 
-			int happiness = calc_happiness( child_id, gift_id );
-			if ( happiness == NO_HAPPINESS ) 
+			bool is_twin = (child_id < 4000);
+			if ( is_twin && ( child_id & 0x1 )){
+			   	continue; /* odd numbered twins are ignored */
+			}
+			int happiness = is_twin ?
+				calc_happiness( child_id, gift_id ) + calc_happiness( child_id+1, gift_id ) :  /* Twin */
+				calc_happiness( child_id, gift_id ); /* Not twin */
+
+			if ( !is_twin && (happiness == NO_HAPPINESS)) 
+				continue;
+			if ( is_twin && (happiness == 2 * NO_HAPPINESS))
 				continue;
 
 			double val = happiness / 2000.0;
@@ -103,11 +119,11 @@ int main(void)
 
 			ia[constraint_col] = gift_id + 1;
 			ja[constraint_col] = constraint_col; 
-			ar[constraint_col] = 1.0;
+			ar[constraint_col] = is_twin ? 2.0 : 1.0;
 
 			ia[num_variables + constraint_col] = child_id + n_gift_type + 1;
 			ja[num_variables + constraint_col] = constraint_col; 
-			ar[num_variables + constraint_col] = 1.0; 
+			ar[num_variables + constraint_col] = 1.0; /* each pair of twins are handeled as one. This should be 1.0! */ 
 		}
 	}
 	printf("\n"); fflush(stdout); /* When printing \r to stdout you should add something like this. */
@@ -121,7 +137,7 @@ int main(void)
 
 	/* Solve */
 	printf("Loading matrix.\n");
-	glp_load_matrix(mip, constraint_col, ia, ja, ar);
+	glp_load_matrix(mip, 2*num_variables, ia, ja, ar);
 	glp_iocp parm;
 	glp_init_iocp(&parm);
 	parm.presolve = GLP_ON;
@@ -148,7 +164,12 @@ int main(void)
 	}
 	fclose(fp);
 
+    /* housekeeping */
 	glp_delete_prob(mip);
+    glp_free_env();
+    free(ia);
+    free(ja);
+    free(ar);
 
 	return 0;
 }
