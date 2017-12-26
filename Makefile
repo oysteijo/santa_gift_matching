@@ -3,20 +3,27 @@ SED = sed
 OPTFLAGS = -Wall -Wextra -O3 -g
 INCLUDE = -I.
 CFLAGS = $(OPTFLAGS) $(INCLUDE)
+DATADIR = ./data
 
-DATAFILES = child_wishlist.csv gift_goodkids.csv
+ZIPPED_DATAFILES = $(wildcard $(DATADIR)/*.zip)
+#child_wishlist.zip gift_goodkids.zip
+DATAFILES = $(patsubst %.zip,%.csv,$(ZIPPED_DATAFILES))
 DATA_HEADERS = $(patsubst %.csv,%.h,$(DATAFILES))
 
-SRC = scorer.c tinymt32.c avg_happiness.c
-OBJS = $(patsubst %.c,%.o,$(SRC))
+SCORER_SRC = scorer.c avg_happiness.c
+SCORER_OBJS = $(patsubst %.c,%.o,$(SCORER_SRC))
 
 %.h : %.csv; $(SED) -e "s/^[0-9]*,/\{/g" -e "s/$$/\},/g" $< > $@
+%.csv: %.zip; unzip -o $< -d $(DATADIR) 
+
+#mytest:
+#	echo $(DATA_HEADERS)
 
 all: scorer
-$(OBJS): $(DATA_HEADERS) $(SRC)
-scorer: $(OBJS)
+$(SCORER_OBJS): $(DATA_HEADERS) $(SCORER_SRC)
+scorer: $(SCORER_OBJS)
 
 .PHONY: clean
 clean:
-	$(RM) $(OBJS) $(DATA_HEADERS) *~
+	$(RM) $(SCORER_OBJS) $(DATA_HEADERS) *~
 	

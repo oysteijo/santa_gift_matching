@@ -1,10 +1,12 @@
 # santa_gift_matching
 Storing code for the [Kaggle Santa Gift Matching Competition.](https://www.kaggle.com/c/santa-gift-matching)
 
-The code is currently just a scorer after the scoring function given.
+Since I started, the competition has been restarted. **This code is
+therfore for the code for the part before the restart.** Since the data in the
+competiotn has been updated, the pre-reset data is provided in the data directory.
 
-The files `tinymt32.c` and `tinymt32.h` are taken form TinyMT. I claim no credit (or blame) for those file. Thank you to the authors of MT and TinyMT.
+The code is currently just a scorer and GPLK solver. Th solver take long time to run.
 
-To compile this there is a `Makefile` available. Just type `make`. However you do need the datafiles from Kaggle. Simply download and save in the same directory as these source files, the datafiles called: `child_wishlist.csv` and `gift_goodkids.csv`. (They may be zipped, so you should unzip them, of course).
+To compile this there is a `Makefile` available. Just type `make`.
 
 So here we begin....

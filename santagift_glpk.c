@@ -35,11 +35,11 @@ End
 #endif 
 
 const uint16_t wishlist[n_children][n_wish_pr_child] = {
-#include "child_wishlist.h"
+#include "data/child_wishlist.h"
 };
 
 const int32_t childlist[n_gift_type][n_child_pref] = {
-#include "gift_goodkids.h"
+#include "data/gift_goodkids.h"
 };
 
 #define NO_HAPPINESS -101

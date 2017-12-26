@@ -1,11 +1,11 @@
 #include "avg_happiness.h"
 
 const uint16_t wishlist[n_children][10] = {
-#include "child_wishlist.h"
+#include "data/child_wishlist.h"
 };
 
 const int32_t childlist[1000][n_child_pref] = {
-#include "gift_goodkids.h"
+#include "data/gift_goodkids.h"
 };
 
 float avg_happiness(uint16_t *giftlist)
